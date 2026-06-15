@@ -83,17 +83,53 @@ fcp digest --since 24h
 
 ## Agent Usage
 
-FeedCopilot does not require a specific agent runtime. It exposes stable CLI commands and Markdown output:
+FeedCopilot does not require a specific agent runtime. It connects to vibe coding
+and local agent tools through a generic CLI contract:
+
+- `feedcopilot digest` writes Markdown to stdout;
+- `feedcopilot digest --output FILE` writes Markdown to a file;
+- `feedcopilot ai run` sends the digest to the configured external command.
+
+There are no built-in vendor SDK integrations. Claude Code, Codex CLI, OpenClaw,
+Hermes, and similar tools can be connected as long as they expose a shell command
+that can read stdin or consume a Markdown file.
+
+### Pipe a digest into an agent
 
 ```bash
 feedcopilot digest --since 24h | hermes chat
 feedcopilot digest --since 24h | openclaw run rss-summary
+feedcopilot digest --since 24h | claude
+feedcopilot digest --since 24h | codex
 ```
 
-Or save to file:
+Use the actual command syntax required by your installed tool. If the tool does
+not read stdin reliably, use the file-based workflow instead.
+
+### File-based workflow
 
 ```bash
 feedcopilot digest --since 24h --output summaries/today.md
+claude summaries/today.md
+codex summaries/today.md
+```
+
+### Configure an external agent command
+
+FeedCopilot can run one configured command with the digest as stdin:
+
+```bash
+feedcopilot config set ai.enabled true
+feedcopilot config set ai.command "hermes chat"
+feedcopilot ai run --since 24h
+```
+
+Other examples, depending on the CLI installed on your machine:
+
+```bash
+feedcopilot config set ai.command "openclaw run rss-summary"
+feedcopilot config set ai.command "claude"
+feedcopilot config set ai.command "codex"
 ```
 
 ## Documentation

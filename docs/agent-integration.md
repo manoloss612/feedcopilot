@@ -4,7 +4,15 @@
 
 FeedCopilot should not depend on a specific agent runtime.
 
-The stable integration surface is the CLI.
+The stable integration surface is the CLI:
+
+- stdout Markdown from `feedcopilot digest`;
+- file output from `feedcopilot digest --output FILE`;
+- external command execution from `feedcopilot ai run`.
+
+FeedCopilot does not include vendor SDK integrations. Claude Code, Codex CLI,
+OpenClaw, Hermes, and similar vibe coding tools can be connected when they
+provide a shell command that reads stdin or accepts a Markdown file.
 
 ## 2. Basic Agent Patterns
 
@@ -18,12 +26,33 @@ feedcopilot digest --since 24h | hermes chat
 feedcopilot digest --since 24h | openclaw run rss-summary
 ```
 
+```bash
+feedcopilot digest --since 24h | claude
+```
+
+```bash
+feedcopilot digest --since 24h | codex
+```
+
 ### File-based workflow
 
 ```bash
 feedcopilot digest --since 24h --output summaries/today.md
 hermes chat summaries/today.md
 ```
+
+```bash
+feedcopilot digest --since 24h --output summaries/today.md
+claude summaries/today.md
+```
+
+```bash
+feedcopilot digest --since 24h --output summaries/today.md
+codex summaries/today.md
+```
+
+Use the actual command syntax required by the agent CLI installed on your
+machine. If a tool does not read stdin reliably, prefer the file-based workflow.
 
 ## 3. External AI Command
 
@@ -41,6 +70,14 @@ Command:
 
 ```bash
 feedcopilot ai run --since 24h
+```
+
+Other command examples:
+
+```bash
+feedcopilot config set ai.command "openclaw run rss-summary"
+feedcopilot config set ai.command "claude"
+feedcopilot config set ai.command "codex"
 ```
 
 Expected behavior:

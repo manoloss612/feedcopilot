@@ -174,19 +174,49 @@ feedcopilot config set ai.command "your-command"
 
 ## 本地代理工具集成
 
-FeedCopilot 不绑定特定代理运行时。稳定集成面是 CLI 和 Markdown 输出。
+FeedCopilot 不绑定特定代理运行时。它连接 Claude Code、Codex CLI、OpenClaw、Hermes 等 vibe coding / 本地代理工具的方式是通用 CLI 协议：
 
-通过管道传给外部工具：
+- `feedcopilot digest` 把 Markdown 摘要输出到 stdout；
+- `feedcopilot digest --output FILE` 把 Markdown 摘要写入文件；
+- `feedcopilot ai run` 把摘要通过 stdin 传给用户配置的外部命令。
+
+当前项目没有内置任何厂商 SDK 或专用 API 适配器。只要目标工具提供 shell 命令，并且能读取 stdin 或消费 Markdown 文件，就可以连接。
+
+### 通过管道传给代理工具
 
 ```bash
 feedcopilot digest --since 24h | hermes chat
 feedcopilot digest --since 24h | openclaw run rss-summary
+feedcopilot digest --since 24h | claude
+feedcopilot digest --since 24h | codex
 ```
 
-或者先输出到文件：
+不同工具的 CLI 参数可能不同，请以你本机安装的实际命令为准。如果工具不能稳定读取 stdin，建议使用文件方式。
+
+### 文件方式
 
 ```bash
 feedcopilot digest --since 24h --output summaries/today.md
+claude summaries/today.md
+codex summaries/today.md
+```
+
+### 配置外部代理命令
+
+FeedCopilot 可以把 digest 作为 stdin 传给一个配置好的外部命令：
+
+```bash
+feedcopilot config set ai.enabled true
+feedcopilot config set ai.command "hermes chat"
+feedcopilot ai run --since 24h
+```
+
+其他示例，取决于你本机实际安装的 CLI：
+
+```bash
+feedcopilot config set ai.command "openclaw run rss-summary"
+feedcopilot config set ai.command "claude"
+feedcopilot config set ai.command "codex"
 ```
 
 更多示例见：
