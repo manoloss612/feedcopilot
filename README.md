@@ -1,5 +1,7 @@
 # FeedCopilot
 
+[中文说明](README.zh-CN.md)
+
 FeedCopilot is a cross-platform TUI RSS reader for ordinary users, with CLI, scheduling, Markdown digest, backup/restore, and external AI command support for advanced users and local agents.
 
 ## Goals
