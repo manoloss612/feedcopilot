@@ -25,10 +25,6 @@ feedcopilot digest --since 24h --output summaries/today.md
 hermes chat summaries/today.md
 ```
 
-### Codex usage
-
-Codex can read the repository, run tests, and develop features. It can also use FeedCopilot output as local files.
-
 ## 3. External AI Command
 
 Config:
@@ -41,10 +37,10 @@ input_mode = "stdin"
 output_mode = "stdout"
 ```
 
-Future command:
+Command:
 
 ```bash
-feedcopilot ai summarize --since 24h
+feedcopilot ai run --since 24h
 ```
 
 Expected behavior:

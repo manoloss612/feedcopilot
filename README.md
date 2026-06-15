@@ -10,13 +10,17 @@ FeedCopilot is designed as:
 - a three-column terminal UI reader;
 - a CLI tool for automation;
 - a Markdown digest generator;
-- a bridge between RSS feeds and local agents such as OpenClaw, Hermes, Codex CLI, or other shell-based tools.
+- a bridge between RSS feeds and local agents such as OpenClaw, Hermes, or other shell-based tools.
 
 RSS fetching, parsing, storage, reading-state management, search, and digest generation should work without consuming any AI tokens. AI is optional and is only invoked through external commands configured by the user.
 
-## First Version Scope
+## Current Status
 
-FeedCopilot v0.1 supports:
+FeedCopilot is currently an early v0.1 development build. It supports the local
+RSS workflow end to end, but the TUI is intentionally minimal and full-text
+article extraction is not implemented yet.
+
+The current build supports:
 
 - Python package installation, preferably via `pipx`;
 - official command: `feedcopilot`;
@@ -28,34 +32,35 @@ FeedCopilot v0.1 supports:
 - OPML import/export;
 - JSON export/import for data portability;
 - Markdown digest generation;
-- TUI three-column reader;
+- minimal three-column TUI;
 - feed categories;
 - manual feed language setting;
 - unread/read state;
 - starred items;
 - basic search;
 - feed health checks;
-- optional full-text fetching;
-- schedule wizard;
+- scheduled jobs through generated OS task files;
 - backup and restore;
 - English and Chinese interface;
 - external AI command interface.
 
 ## Installation
 
-Development installation:
+Install from GitHub:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/feedcopilot.git
+git clone https://github.com/manoloss612/feedcopilot.git
 cd feedcopilot
+python -m pip install -e .
+```
+
+If you use `pipx`, install from the local checkout:
+
+```bash
 pipx install -e .
 ```
 
-Future PyPI installation:
-
-```bash
-pipx install feedcopilot
-```
+The package is not published to PyPI yet.
 
 ## Quick Start
 
@@ -93,18 +98,11 @@ feedcopilot digest --since 24h --output summaries/today.md
 
 See:
 
-- `docs/product-requirements.md`
-- `docs/technical-design.md`
-- `docs/cli-spec.md`
-- `docs/database-schema.md`
-- `docs/config-spec.md`
-- `docs/tui-design.md`
 - `docs/agent-integration.md`
-- `docs/codex-development-plan.md`
 
 ## Implemented v0.1 Commands
 
-The current development build includes the local-first core workflow:
+The current v0.1 build includes the local-first core workflow:
 
 ```bash
 feedcopilot init
