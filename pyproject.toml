@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "feedcopilot"
+version = "0.1.0"
+description = "A local-first TUI RSS reader with CLI, Markdown digest, scheduling, and external AI command support."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "FeedCopilot Contributors" }
+]
+keywords = ["rss", "atom", "tui", "cli", "agent", "markdown", "feed-reader"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary",
+  "Topic :: Terminals",
+]
+
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+  "textual>=0.80",
+  "feedparser>=6.0",
+  "httpx>=0.27",
+  "platformdirs>=4.2",
+  "pydantic>=2.7",
+  "sqlmodel>=0.0.22",
+  "tomli-w>=1.0",
+  "defusedxml>=0.7",
+  "python-dateutil>=2.9",
+  "click>=8.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "pytest-cov>=5.0",
+]
+
+fulltext = [
+  "readability-lxml>=0.8",
+  "beautifulsoup4>=4.12",
+]
+
+[project.scripts]
+feedcopilot = "feedcopilot.cli.app:app"
+fcp = "feedcopilot.cli.app:app"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

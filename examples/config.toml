@@ -1,0 +1,36 @@
+[app]
+language = "en"
+theme = "default"
+
+[storage]
+database = "feedcopilot.db"
+markdown_dir = "summaries"
+backup_dir = "backups"
+export_dir = "exports"
+
+[fetch]
+timeout = 20
+user_agent = "FeedCopilot/0.1"
+full_text = false
+max_concurrent = 5
+
+[digest]
+default_since = "24h"
+format = "markdown"
+group_by = "category"
+include_read = false
+include_starred = true
+
+[ai]
+enabled = false
+command = ""
+input_mode = "stdin"
+output_mode = "stdout"
+
+[interests]
+keywords = ["France", "AI", "translation", "higher education"]
+
+[tui]
+layout = "three_column"
+show_health_status = true
+preview_width = 40

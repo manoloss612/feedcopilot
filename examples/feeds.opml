@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>FeedCopilot Example Feeds</title>
+  </head>
+  <body>
+    <outline text="Example">
+      <outline text="Python Insider" title="Python Insider" type="rss" xmlUrl="https://feeds.feedburner.com/PythonInsider" htmlUrl="https://blog.python.org/" />
+    </outline>
+  </body>
+</opml>
