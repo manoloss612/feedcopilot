@@ -15,3 +15,6 @@ Initial development version.
 - Added lightweight English and Chinese i18n resources.
 - Added pytest coverage for configuration, database, RSS, exporters, CLI, and runtime helpers.
 - Fixed `pyproject.toml` metadata layout so editable installs and wheel builds work.
+- Added optional HTTP/HTTPS proxy support to RSS fetcher, configurable via
+  `fetch.proxy` in `config.toml` or the `HTTPS_PROXY` / `HTTP_PROXY` /
+  `FEEDCOPILOT_PROXY` environment variables.

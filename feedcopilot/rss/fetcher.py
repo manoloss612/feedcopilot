@@ -1,6 +1,7 @@
 """RSS fetching and parsing."""
 
 import hashlib
+import os
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -30,9 +31,29 @@ def compute_hash(*parts: str | None) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def fetch_feed(url: str, timeout: int = 20, user_agent: str = "FeedCopilot/0.1"):
+def _resolve_proxy(proxy: str | None) -> str:
+    """Resolve effective proxy URL.
+
+    Priority: explicit argument > HTTPS_PROXY > HTTP_PROXY > "".
+    Returning "" means "no proxy" (httpx.Client uses a default transport).
+    """
+    if proxy:
+        return proxy
+    return os.environ.get("FEEDCOPILOT_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or ""
+
+
+def fetch_feed(
+    url: str,
+    timeout: int = 20,
+    user_agent: str = "FeedCopilot/0.1",
+    proxy: str | None = None,
+):
     headers = {"User-Agent": user_agent}
-    with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
+    proxy_url = _resolve_proxy(proxy)
+    client_kwargs: dict = {"timeout": timeout, "follow_redirects": True, "headers": headers}
+    if proxy_url:
+        client_kwargs["transport"] = httpx.HTTPTransport(proxy=proxy_url)
+    with httpx.Client(**client_kwargs) as client:
         response = client.get(url)
         response.raise_for_status()
     return feedparser.parse(response.content)
@@ -78,6 +99,7 @@ def fetch_enabled_feeds(
     user_agent: str = "FeedCopilot/0.1",
     feed_id: int | None = None,
     category: str | None = None,
+    proxy: str | None = None,
 ) -> tuple[int, int]:
     total_items = 0
     total_new_items = 0
@@ -90,7 +112,7 @@ def fetch_enabled_feeds(
             continue
         started_at = utc_now()
         try:
-            parsed = fetch_feed(feed.url, timeout=timeout, user_agent=user_agent)
+            parsed = fetch_feed(feed.url, timeout=timeout, user_agent=user_agent, proxy=proxy)
             parsed_items = normalize_items(parsed)
             new_count = 0
             for parsed_item in parsed_items:

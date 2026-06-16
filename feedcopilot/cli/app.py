@@ -120,6 +120,7 @@ def fetch(
             user_agent=config.fetch.user_agent,
             feed_id=feed_id,
             category=category,
+            proxy=config.fetch.proxy,
         )
     suffix = " Full-text fetching is not implemented yet." if full_text else ""
     console.print(f"Fetched {total} items, {new} new.{suffix}")

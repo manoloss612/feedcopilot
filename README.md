@@ -162,6 +162,10 @@ feedcopilot item mark-read ITEM_ID
 feedcopilot item star ITEM_ID
 feedcopilot search QUERY
 
+# Fetch through a corporate / regional proxy
+feedcopilot config set fetch.proxy "http://127.0.0.1:8080"
+# ... or set HTTPS_PROXY / HTTP_PROXY in the environment, and run normally.
+
 feedcopilot import opml feeds.opml
 feedcopilot export opml --output feeds.opml
 feedcopilot import json data.json

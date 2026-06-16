@@ -28,6 +28,7 @@ class FetchConfig(BaseModel):
     user_agent: str = "FeedCopilot/0.1"
     full_text: bool = False
     max_concurrent: int = 5
+    proxy: str = ""  # HTTP/HTTPS proxy URL, e.g. "http://127.0.0.1:8080". Empty = no proxy.
 
 
 class DigestConfig(BaseModel):
