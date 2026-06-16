@@ -5,6 +5,8 @@ from typer.testing import CliRunner
 from feedcopilot.cli import app as cli_module
 from feedcopilot.cli.app import app
 from feedcopilot.core import config as config_module
+from feedcopilot.db.repository import get_feed
+from feedcopilot.db.session import get_session
 
 
 def isolate_app_dirs(monkeypatch, tmp_path):
@@ -177,9 +179,6 @@ def test_cli_feed_update_changes_multiple_fields(monkeypatch, tmp_path):
     assert "atom.xml" in result.output  # update command output shows new URL
 
     # Read back from db to confirm the change persisted.
-    from feedcopilot.db.session import get_session
-    from feedcopilot.db.repository import get_feed
-
     db_path = tmp_path / "data" / "feedcopilot.db"
     with get_session(db_path) as session:
         feed = get_feed(session, 1)
