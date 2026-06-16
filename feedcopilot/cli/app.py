@@ -236,6 +236,49 @@ def feed_disable(feed_id: int) -> None:
     _set_feed_enabled(feed_id, False)
 
 
+@feed_app.command("update")
+def feed_update(
+    feed_id: int,
+    url: str | None = typer.Option(None, "--url", help="New feed URL."),
+    category: str | None = typer.Option(None, "--category", "-c", help="New category."),
+    language: str | None = typer.Option(None, "--language", "-l", help="New language."),
+) -> None:
+    """Update a feed's url, category, or language."""
+    changes: dict[str, str] = {}
+    if url is not None:
+        changes["url"] = url
+    if category is not None:
+        changes["category"] = category
+    if language is not None:
+        changes["language"] = language
+    if not changes:
+        lang = load_config().app.language
+        console.print(translate("feed_update_no_changes", lang))
+        raise typer.BadParameter(
+            "At least one of --url, --category, or --language must be provided."
+        )
+
+    config = load_config()
+    with get_session(_ensure_database(config.storage.database)) as session:
+        feed = update_feed(session, feed_id, **changes)
+
+    lang = load_config().app.language
+    if feed is None:
+        console.print(translate("feed_not_found", lang))
+        raise typer.Exit(code=1)
+
+    console.print(
+        translate(
+            "feed_updated",
+            lang,
+            id=feed.id,
+            url=feed.url,
+            category=feed.category,
+            lang=feed.language,
+        )
+    )
+
+
 @feed_app.command("health")
 def feed_health(feed_id: int | None = None) -> None:
     """Show feed health."""
