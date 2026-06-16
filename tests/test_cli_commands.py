@@ -123,3 +123,93 @@ def test_cli_tui_command_invokes_app(monkeypatch):
 
 def test_path_helper_type():
     assert isinstance(Path("."), Path)
+
+
+def test_cli_feed_update_changes_category(monkeypatch, tmp_path):
+    isolate_app_dirs(monkeypatch, tmp_path)
+    runner = CliRunner()
+
+    assert runner.invoke(app, ["init"]).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["feed", "add", "https://example.com/rss.xml", "--category", "News"],
+    ).exit_code == 0
+
+    # Update only the category; url + language must stay the same.
+    result = runner.invoke(
+        app,
+        ["feed", "update", "1", "--category", "Tech"],
+    )
+    assert result.exit_code == 0
+    assert "updated" in result.output.lower()
+    assert "Tech" in result.output
+
+    # Verify by listing.
+    listed = runner.invoke(app, ["feed", "list"])
+    assert listed.exit_code == 0
+    assert "Tech" in listed.output
+    assert "News" not in listed.output
+
+
+def test_cli_feed_update_changes_multiple_fields(monkeypatch, tmp_path):
+    isolate_app_dirs(monkeypatch, tmp_path)
+    runner = CliRunner()
+
+    assert runner.invoke(app, ["init"]).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["feed", "add", "https://example.com/rss.xml", "--category", "News", "--language", "en"],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "feed",
+            "update",
+            "1",
+            "--url",
+            "https://example.com/atom.xml",
+            "--language",
+            "fr",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "atom.xml" in result.output  # update command output shows new URL
+
+    # Read back from db to confirm the change persisted.
+    from feedcopilot.db.session import get_session
+    from feedcopilot.db.repository import get_feed
+
+    db_path = tmp_path / "data" / "feedcopilot.db"
+    with get_session(db_path) as session:
+        feed = get_feed(session, 1)
+        assert feed is not None
+        assert feed.url == "https://example.com/atom.xml"
+        assert feed.language == "fr"
+        assert feed.category == "News"  # unchanged
+
+
+def test_cli_feed_update_without_options_fails(monkeypatch, tmp_path):
+    isolate_app_dirs(monkeypatch, tmp_path)
+    runner = CliRunner()
+
+    assert runner.invoke(app, ["init"]).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["feed", "add", "https://example.com/rss.xml"],
+    ).exit_code == 0
+
+    result = runner.invoke(app, ["feed", "update", "1"])
+    assert result.exit_code != 0
+    assert "no fields" in result.output.lower() or "at least one" in result.output.lower()
+
+
+def test_cli_feed_update_unknown_id(monkeypatch, tmp_path):
+    isolate_app_dirs(monkeypatch, tmp_path)
+    runner = CliRunner()
+
+    assert runner.invoke(app, ["init"]).exit_code == 0
+
+    result = runner.invoke(app, ["feed", "update", "999", "--category", "X"])
+    assert result.exit_code != 0
+    assert "not found" in result.output.lower()

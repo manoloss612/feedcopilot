@@ -18,3 +18,5 @@ Initial development version.
 - Added optional HTTP/HTTPS proxy support to RSS fetcher, configurable via
   `fetch.proxy` in `config.toml` or the `HTTPS_PROXY` / `HTTP_PROXY` /
   `FEEDCOPILOT_PROXY` environment variables.
+- Added `feedcopilot feed update <ID> --url/--category/--language` command
+  for editing a feed's metadata without touching the database directly.

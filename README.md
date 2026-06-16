@@ -150,6 +150,7 @@ feedcopilot config set app.language zh
 
 feedcopilot feed add URL --category News --language en
 feedcopilot feed list
+feedcopilot feed update FEED_ID --category Tech --language en
 feedcopilot feed enable FEED_ID
 feedcopilot feed disable FEED_ID
 feedcopilot feed health
