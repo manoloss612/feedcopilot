@@ -14,3 +14,4 @@ Initial development version.
 - Added Markdown digest rendering.
 - Added lightweight English and Chinese i18n resources.
 - Added pytest coverage for configuration, database, RSS, exporters, CLI, and runtime helpers.
+- Fixed `pyproject.toml` metadata layout so editable installs and wheel builds work.

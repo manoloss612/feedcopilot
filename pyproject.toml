@@ -26,11 +26,6 @@ classifiers = [
   "Topic :: Terminals",
 ]
 
-[project.urls]
-Homepage = "https://github.com/manoloss612/feedcopilot"
-Repository = "https://github.com/manoloss612/feedcopilot"
-Issues = "https://github.com/manoloss612/feedcopilot/issues"
-
 dependencies = [
   "typer>=0.12",
   "rich>=13.7",
@@ -58,6 +53,11 @@ fulltext = [
   "readability-lxml>=0.8",
   "beautifulsoup4>=4.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/manoloss612/feedcopilot"
+Repository = "https://github.com/manoloss612/feedcopilot"
+Issues = "https://github.com/manoloss612/feedcopilot/issues"
 
 [project.scripts]
 feedcopilot = "feedcopilot.cli.app:app"
