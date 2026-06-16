@@ -19,8 +19,8 @@ RSS fetching, parsing, storage, reading-state management, search, and digest gen
 ## Current Status
 
 FeedCopilot is currently an early v0.1 development build. It supports the local
-RSS workflow end to end, but the TUI is intentionally minimal and full-text
-article extraction is not implemented yet.
+RSS workflow end to end, including a basic database-backed three-column TUI.
+Full-text article extraction is not implemented yet.
 
 The current build supports:
 
@@ -34,7 +34,7 @@ The current build supports:
 - OPML import/export;
 - JSON export/import for data portability;
 - Markdown digest generation;
-- minimal three-column TUI;
+- database-backed three-column TUI;
 - feed categories;
 - manual feed language setting;
 - unread/read state;

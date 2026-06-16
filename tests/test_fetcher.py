@@ -128,6 +128,8 @@ def test_fetch_feed_uses_proxy_transport(monkeypatch):
 def test_fetch_feed_no_proxy_means_no_transport_override(monkeypatch):
     """Without a proxy, httpx.Client must be constructed without a custom transport."""
     captured: dict = {}
+    for var in ("FEEDCOPILOT_PROXY", "HTTPS_PROXY", "HTTP_PROXY"):
+        monkeypatch.delenv(var, raising=False)
 
     def fake_http_transport(*args, **kwargs):
         raise AssertionError("HTTPTransport must not be constructed when no proxy is set")
