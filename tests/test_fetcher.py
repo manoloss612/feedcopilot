@@ -1,4 +1,3 @@
-import httpx
 from feedcopilot.db.repository import create_feed, list_items
 from feedcopilot.db.session import get_session, init_db
 from feedcopilot.rss import fetcher

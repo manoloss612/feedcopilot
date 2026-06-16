@@ -39,7 +39,12 @@ def _resolve_proxy(proxy: str | None) -> str:
     """
     if proxy:
         return proxy
-    return os.environ.get("FEEDCOPILOT_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or ""
+    return (
+        os.environ.get("FEEDCOPILOT_PROXY")
+        or os.environ.get("HTTPS_PROXY")
+        or os.environ.get("HTTP_PROXY")
+        or ""
+    )
 
 
 def fetch_feed(
