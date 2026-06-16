@@ -115,6 +115,13 @@ feedcopilot item unstar ITEM_ID
 feedcopilot search QUERY
 ```
 
+通过代理抓取（公司内网 / 区域网络环境）：
+
+```bash
+feedcopilot config set fetch.proxy "http://127.0.0.1:8080"
+# 也可以直接设置 HTTPS_PROXY / HTTP_PROXY 环境变量，无需改 config。
+```
+
 导入导出：
 
 ```bash
