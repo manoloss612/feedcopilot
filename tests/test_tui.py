@@ -1,5 +1,7 @@
 import asyncio
 
+from textual.containers import VerticalScroll
+
 from feedcopilot.db.models import Feed, Item
 from feedcopilot.db.repository import create_feed, create_item_if_new
 from feedcopilot.db.session import get_session, init_db
@@ -64,7 +66,8 @@ def test_tui_loads_filters_items_and_preview(tmp_path):
         nonlocal preview
         async with app.run_test() as pilot:
             await pilot.pause()
-            preview = str(app.query_one("#right").content)
+            assert isinstance(app.query_one("#right"), VerticalScroll)
+            preview = str(app.query_one("#preview-content").content)
 
     asyncio.run(run_app())
 

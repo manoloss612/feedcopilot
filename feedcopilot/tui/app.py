@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal
+from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Label, ListItem, ListView, Static
 
 from feedcopilot.core.config import get_data_dir, load_config
@@ -67,6 +67,10 @@ class FeedCopilotTUI(App):
         overflow-y: auto;
     }
 
+    #preview-content {
+        width: 100%;
+    }
+
     .pane-title {
         text-style: bold;
         color: $accent;
@@ -97,7 +101,8 @@ class FeedCopilotTUI(App):
             with Static(classes="pane", id="middle"):
                 yield Label(translate("tui_middle", self.language), classes="pane-title")
                 yield ListView(id="item-list")
-            yield Static(translate("tui_right", self.language), classes="pane", id="right")
+            with VerticalScroll(classes="pane", id="right"):
+                yield Static(translate("tui_right", self.language), id="preview-content")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -273,7 +278,8 @@ class FeedCopilotTUI(App):
         return next((item for item in self.items if item.id == item_id), None)
 
     def update_preview(self, text: str) -> None:
-        self.query_one("#right", Static).update(text)
+        self.query_one("#preview-content", Static).update(text)
+        self.query_one("#right", VerticalScroll).scroll_home(animate=False)
 
 
 def build_filters(feeds: list[Feed]) -> list[FeedFilter]:
