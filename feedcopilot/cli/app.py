@@ -121,6 +121,8 @@ def fetch(
             feed_id=feed_id,
             category=category,
             proxy=config.fetch.proxy,
+            verify_ssl=config.fetch.verify_ssl,
+            no_proxy=config.fetch.no_proxy,
         )
     suffix = " Full-text fetching is not implemented yet." if full_text else ""
     console.print(f"Fetched {total} items, {new} new.{suffix}")

@@ -25,10 +25,16 @@ class StorageConfig(BaseModel):
 
 class FetchConfig(BaseModel):
     timeout: int = 20
-    user_agent: str = "FeedCopilot/0.1"
+    user_agent: str = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/126.0.0.0 Safari/537.36"
+    )
     full_text: bool = False
     max_concurrent: int = 5
     proxy: str = ""  # HTTP/HTTPS proxy URL, e.g. "http://127.0.0.1:8080". Empty = no proxy.
+    verify_ssl: bool = True  # Verify TLS certs. False skips cert checks (e.g. CNKI).
+    no_proxy: str = ""  # Comma-separated hostnames that bypass `proxy` (curl_cffi NO_PROXY).
 
 
 class DigestConfig(BaseModel):
@@ -54,7 +60,6 @@ class TUIConfig(BaseModel):
     layout: Literal["three_column"] = "three_column"
     show_health_status: bool = True
     preview_width: int = 40
-    icon_set: Literal["ascii", "nerd", "none"] = "ascii"
 
 
 class FeedCopilotConfig(BaseModel):

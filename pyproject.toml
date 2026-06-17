@@ -32,6 +32,7 @@ dependencies = [
   "textual>=0.80",
   "feedparser>=6.0",
   "httpx>=0.27",
+  "curl_cffi>=0.15",  # Browser-like TLS/HTTP-2 fingerprint; required for some feeds (CNKI) that reject plain httpx.
   "platformdirs>=4.2",
   "pydantic>=2.7",
   "sqlmodel>=0.0.22",
