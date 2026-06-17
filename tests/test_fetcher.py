@@ -41,7 +41,8 @@ def test_fetch_enabled_feeds_stores_new_items(tmp_path, monkeypatch):
     db_path = tmp_path / "feedcopilot.db"
     init_db(db_path)
 
-    def fake_fetch_feed(url, timeout=20, user_agent="FeedCopilot/0.1", proxy=None):
+    def fake_fetch_feed(url, timeout=20, user_agent="FeedCopilot/0.1", proxy=None,
+                        verify_ssl=True, use_curl=True, no_proxy=None):
         return parse_feed_content(RSS_XML)
 
     monkeypatch.setattr(fetcher, "fetch_feed", fake_fetch_feed)
@@ -86,83 +87,96 @@ def test_resolve_proxy_empty_when_unset(monkeypatch):
     assert _resolve_proxy("") == ""
 
 
-def test_fetch_feed_uses_proxy_transport(monkeypatch):
-    """When a proxy is set, httpx.Client must receive a transport with that proxy URL."""
+def test_fetch_feed_uses_curl_backend_by_default(monkeypatch):
+    """Default use_curl=True must route through curl_cffi, not httpx.
+
+    We verify by monkeypatching `curl_cffi.requests` BEFORE fetch_feed
+    imports it: the function calls `curl_requests.Session()` then
+    `session.get(url, ...)`, so we record the session class and stub the
+    session's get to capture the call.
+    """
+    import sys
     captured: dict = {}
 
-    def fake_http_transport(proxy=None, **kwargs):
-        captured["proxy"] = proxy
-        captured["kwargs"] = kwargs
-        # Return a sentinel — we never .open() the transport here.
-        return object()
+    class FakeResp:
+        status_code = 200
+        content = RSS_XML.encode("utf-8")
+        def raise_for_status(self_inner_inner):
+            return None
 
-    monkeypatch.setattr(fetcher.httpx, "HTTPTransport", fake_http_transport)
+    class FakeSession:
+        def __init__(self_inner, *a, **k):
+            pass
+        def get(self_inner, url, **kwargs):
+            captured["url"] = url
+            captured["kwargs"] = kwargs
+            return FakeResp()
+
+    fake_requests_mod = type("FakeCurlRequests", (), {
+        "Session": FakeSession,
+    })
+    fake_parent_mod = type("FakeCurlCffi", (), {})
+    fake_parent_mod.requests = fake_requests_mod
+    monkeypatch.setitem(sys.modules, "curl_cffi", fake_parent_mod)
+    monkeypatch.setitem(sys.modules, "curl_cffi.requests", fake_requests_mod)
+
+    # Make sure httpx is NOT used in the default path.
+    def fail_httpx(*a, **k):
+        raise AssertionError("httpx must not be used when use_curl=True (default)")
+    monkeypatch.setattr(fetcher.httpx, "Client", fail_httpx)
+    monkeypatch.setattr(fetcher.httpx, "HTTPTransport", fail_httpx)
+
+    fetcher.fetch_feed("https://example.com/rss")
+
+    assert captured["url"] == "https://example.com/rss"
+    # headers + verify are forwarded
+    assert captured["kwargs"]["headers"]["User-Agent"] == "FeedCopilot/0.1"
+    assert captured["kwargs"]["verify"] is True
+    assert captured["kwargs"]["allow_redirects"] is True
+
+
+def test_fetch_feed_httpx_path_when_use_curl_false(monkeypatch):
+    """use_curl=False must use httpx.Client (legacy path) and NOT call curl_cffi."""
+    captured: dict = {}
+
+    def fake_http_transport(*args, **kwargs):
+        captured["transport_args"] = (args, kwargs)
+        return object()
 
     def fake_client(*args, **kwargs):
         captured["client_kwargs"] = kwargs
         class _C:
-            def __enter__(self_inner):
-                return self_inner
-            def __exit__(self_inner, *exc):
-                return False
+            def __enter__(self_inner): return self_inner
+            def __exit__(self_inner, *exc): return False
             def get(self_inner, url):
                 class _Resp:
                     status_code = 200
                     content = RSS_XML.encode("utf-8")
-                    def raise_for_status(self_inner_inner):
-                        return None
+                    def raise_for_status(self_inner_inner): return None
                 return _Resp()
         return _C()
 
+    monkeypatch.setattr(fetcher.httpx, "HTTPTransport", fake_http_transport)
     monkeypatch.setattr(fetcher.httpx, "Client", fake_client)
 
-    fetcher.fetch_feed("https://example.com/rss", proxy="http://127.0.0.1:1087")
+    def fail_curl_get(*a, **k):
+        raise AssertionError("curl_cffi must not be called when use_curl=False")
+    fake_mod = type("M", (), {"get": staticmethod(fail_curl_get)})
+    monkeypatch.setitem(__import__("sys").modules, "curl_cffi.requests", fake_mod)
 
-    assert captured["proxy"] == "http://127.0.0.1:1087"
-    assert captured["client_kwargs"].get("transport") is not None
-    # timeout / follow_redirects / headers still passed through
+    for var in ("FEEDCOPILOT_PROXY", "HTTPS_PROXY", "HTTP_PROXY"):
+        monkeypatch.delenv(var, raising=False)
+
+    fetcher.fetch_feed("https://example.com/rss", use_curl=False)
+
+    assert "transport" not in captured["client_kwargs"]
+    assert captured["client_kwargs"]["verify"] is True
     assert captured["client_kwargs"]["follow_redirects"] is True
     assert captured["client_kwargs"]["headers"]["User-Agent"] == "FeedCopilot/0.1"
 
 
-def test_fetch_feed_no_proxy_means_no_transport_override(monkeypatch):
-    """Without a proxy, httpx.Client must be constructed without a custom transport."""
-    captured: dict = {}
-    for var in ("FEEDCOPILOT_PROXY", "HTTPS_PROXY", "HTTP_PROXY"):
-        monkeypatch.delenv(var, raising=False)
-
-    def fake_http_transport(*args, **kwargs):
-        raise AssertionError("HTTPTransport must not be constructed when no proxy is set")
-
-    monkeypatch.setattr(fetcher.httpx, "HTTPTransport", fake_http_transport)
-
-    def fake_client(*args, **kwargs):
-        captured.update(kwargs)
-        class _C:
-            def __enter__(self_inner):
-                return self_inner
-            def __exit__(self_inner, *exc):
-                return False
-            def get(self_inner, url):
-                class _Resp:
-                    status_code = 200
-                    content = RSS_XML.encode("utf-8")
-                    def raise_for_status(self_inner_inner):
-                        return None
-                return _Resp()
-        return _C()
-
-    monkeypatch.setattr(fetcher.httpx, "Client", fake_client)
-    fetcher.fetch_feed("https://example.com/rss")
-    assert "transport" not in captured
-    assert captured["follow_redirects"] is True
-    assert captured["headers"]["User-Agent"] == "FeedCopilot/0.1"
-
-
-def test_fetch_feed_uses_env_proxy_when_no_arg(monkeypatch, tmp_path):
-    """End-to-end: env var only → fetch_feed resolves and passes proxy through."""
-    monkeypatch.delenv("FEEDCOPILOT_PROXY", raising=False)
-    monkeypatch.setenv("HTTPS_PROXY", "http://env-proxy:1087")
+def test_fetch_feed_uses_httpx_with_proxy_when_use_curl_false(monkeypatch):
+    """use_curl=False + proxy= must build an httpx.HTTPTransport with that proxy."""
     captured: dict = {}
 
     def fake_http_transport(proxy=None, **kwargs):
@@ -184,5 +198,9 @@ def test_fetch_feed_uses_env_proxy_when_no_arg(monkeypatch, tmp_path):
 
     monkeypatch.setattr(fetcher.httpx, "HTTPTransport", fake_http_transport)
     monkeypatch.setattr(fetcher.httpx, "Client", fake_client)
-    fetcher.fetch_feed("https://example.com/rss")
-    assert captured["proxy"] == "http://env-proxy:1087"
+
+    fetcher.fetch_feed("https://example.com/rss", proxy="http://127.0.0.1:1087", use_curl=False)
+
+    assert captured["proxy"] == "http://127.0.0.1:1087"
+    assert captured["client_kwargs"]["transport"] is not None
+    assert captured["client_kwargs"]["follow_redirects"] is True

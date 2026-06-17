@@ -47,21 +47,69 @@ def _resolve_proxy(proxy: str | None) -> str:
     )
 
 
+def _apply_no_proxy(no_proxy: str | None) -> None:
+    """Set the NO_PROXY env var so curl_cffi's env-based proxy detection
+    bypasses the listed hosts. We append (not replace) to preserve any
+    entries the user already exported."""
+    if not no_proxy:
+        return
+    existing = os.environ.get("NO_PROXY", "")
+    parts = [p.strip() for p in no_proxy.split(",") if p.strip()]
+    merged = list(dict.fromkeys(existing.split(",") + parts))  # dedupe, preserve order
+    os.environ["NO_PROXY"] = ",".join(merged)
+    os.environ["no_proxy"] = os.environ["NO_PROXY"]  # curl cares about both casings
+
+
 def fetch_feed(
     url: str,
     timeout: int = 20,
     user_agent: str = "FeedCopilot/0.1",
     proxy: str | None = None,
+    verify_ssl: bool = True,
+    use_curl: bool = True,
+    no_proxy: str | None = None,
 ):
+    """Fetch an RSS feed and return a feedparser result.
+
+    `use_curl=True` (default) routes through curl_cffi to mimic a real browser
+    TLS/HTTP-2 fingerprint; some Chinese feeds (CNKI) reject plain httpx
+    clients. Set False to fall back to httpx.
+    """
     headers = {"User-Agent": user_agent}
     proxy_url = _resolve_proxy(proxy)
-    client_kwargs: dict = {"timeout": timeout, "follow_redirects": True, "headers": headers}
-    if proxy_url:
-        client_kwargs["transport"] = httpx.HTTPTransport(proxy=proxy_url)
-    with httpx.Client(**client_kwargs) as client:
-        response = client.get(url)
+    if use_curl:
+        from curl_cffi import requests as curl_requests
+        # We do NOT pass trust_env=False here: leaving env-based proxy
+        # detection on lets `no_proxy` / `NO_PROXY` exempt specific hosts
+        # (e.g. CNKI, which rejects datacenter egress IPs with HTTP 418).
+        # Per-feed proxy routing is still controlled by `proxies=` below.
+        _apply_no_proxy(no_proxy)
+        session = curl_requests.Session()
+        request_kwargs: dict = {
+            "timeout": timeout,
+            "allow_redirects": True,
+            "headers": headers,
+            "verify": verify_ssl,
+        }
+        if proxy_url:
+            request_kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
+        response = session.get(url, **request_kwargs)
         response.raise_for_status()
-    return feedparser.parse(response.content)
+        content = response.content
+    else:
+        client_kwargs: dict = {
+            "timeout": timeout,
+            "follow_redirects": True,
+            "headers": headers,
+            "verify": verify_ssl,
+        }
+        if proxy_url:
+            client_kwargs["transport"] = httpx.HTTPTransport(proxy=proxy_url)
+        with httpx.Client(**client_kwargs) as client:
+            response = client.get(url)
+            response.raise_for_status()
+        content = response.content
+    return feedparser.parse(content)
 
 
 def parse_feed_content(content: bytes | str):
@@ -105,6 +153,8 @@ def fetch_enabled_feeds(
     feed_id: int | None = None,
     category: str | None = None,
     proxy: str | None = None,
+    verify_ssl: bool = True,
+    no_proxy: str | None = None,
 ) -> tuple[int, int]:
     total_items = 0
     total_new_items = 0
@@ -117,7 +167,14 @@ def fetch_enabled_feeds(
             continue
         started_at = utc_now()
         try:
-            parsed = fetch_feed(feed.url, timeout=timeout, user_agent=user_agent, proxy=proxy)
+            parsed = fetch_feed(
+                feed.url,
+                timeout=timeout,
+                user_agent=user_agent,
+                proxy=proxy,
+                verify_ssl=verify_ssl,
+                no_proxy=no_proxy,
+            )
             parsed_items = normalize_items(parsed)
             new_count = 0
             for parsed_item in parsed_items:
