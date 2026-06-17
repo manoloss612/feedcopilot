@@ -21,6 +21,7 @@ class FeedFilter:
     label: str
     category: str | None = None
     feed_id: int | None = None
+    kind: str = "all"
 
 
 class FeedCopilotTUI(App):
@@ -43,14 +44,28 @@ class FeedCopilotTUI(App):
     CSS = """
     Screen {
         layout: vertical;
+        background: #1e1e2e;
+        color: #cdd6f4;
+    }
+
+    Header {
+        background: #181825;
+        color: #cdd6f4;
+    }
+
+    Footer {
+        background: #11111b;
+        color: #a6adc8;
     }
 
     #columns {
         height: 1fr;
+        background: #1e1e2e;
     }
 
     .pane {
-        border: solid $accent;
+        background: #181825;
+        border: solid #45475a;
         padding: 0 1;
     }
 
@@ -65,20 +80,70 @@ class FeedCopilotTUI(App):
     #right {
         width: 40%;
         overflow-y: auto;
+        scrollbar-background: #181825;
+        scrollbar-color: #cba6f7;
+        scrollbar-color-hover: #f5c2e7;
     }
 
     #preview-content {
         width: 100%;
+        color: #cdd6f4;
     }
 
     .pane-title {
         text-style: bold;
-        color: $accent;
+        color: #cba6f7;
         height: 1;
     }
 
     ListView {
         height: 1fr;
+        background: #181825;
+        color: #cdd6f4;
+    }
+
+    ListItem {
+        color: #bac2de;
+        background: #181825;
+        padding: 0 1;
+    }
+
+    ListItem.active-row {
+        background: #313244;
+        color: #cdd6f4;
+        text-style: bold;
+    }
+
+    ListItem.filter-all {
+        color: #89b4fa;
+        text-style: bold;
+    }
+
+    ListItem.filter-category {
+        color: #cba6f7;
+        text-style: bold;
+    }
+
+    ListItem.filter-feed {
+        color: #94e2d5;
+    }
+
+    ListItem.item-unread {
+        color: #cdd6f4;
+        text-style: bold;
+    }
+
+    ListItem.item-read {
+        color: #6c7086;
+    }
+
+    ListItem.item-starred {
+        color: #f9e2af;
+        text-style: bold;
+    }
+
+    ListItem.item-unread.item-starred {
+        color: #f9e2af;
     }
     """
 
@@ -119,7 +184,7 @@ class FeedCopilotTUI(App):
 
         if not self.db_path.exists():
             self.filters = [FeedFilter("All")]
-            await feed_list.append(ListItem(Label("All", markup=False)))
+            await feed_list.append(ListItem(Label("All", markup=False), classes="filter-all"))
             self.update_preview("Database not found. Run `feedcopilot init` first.")
             return
 
@@ -128,7 +193,10 @@ class FeedCopilotTUI(App):
 
         self.filters = build_filters(feeds)
         for feed_filter in self.filters:
-            list_item = ListItem(Label(feed_filter.label, markup=False))
+            list_item = ListItem(
+                Label(feed_filter.label, markup=False),
+                classes=f"filter-{feed_filter.kind}",
+            )
             list_item.feed_filter = feed_filter
             await feed_list.append(list_item)
 
@@ -159,7 +227,10 @@ class FeedCopilotTUI(App):
             return
 
         for item in self.items:
-            list_item = ListItem(Label(format_item_label(item), markup=False))
+            classes = "item-read" if item.is_read else "item-unread"
+            if item.is_starred:
+                classes += " item-starred"
+            list_item = ListItem(Label(format_item_label(item), markup=False), classes=classes)
             list_item.item_id = item.id
             await item_list.append(list_item)
 
@@ -167,6 +238,11 @@ class FeedCopilotTUI(App):
         self.update_preview(render_item_preview(self.items[0]))
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        for list_item in event.list_view.query(ListItem):
+            list_item.remove_class("active-row")
+        if event.item is not None:
+            event.item.add_class("active-row")
+
         if event.list_view.id != "item-list" or event.item is None:
             return
         item_id = getattr(event.item, "item_id", None)
@@ -287,10 +363,12 @@ def build_filters(feeds: list[Feed]) -> list[FeedFilter]:
     seen_categories: set[str] = set()
     for feed in feeds:
         if feed.category not in seen_categories:
-            filters.append(FeedFilter(f"[Category] {feed.category}", category=feed.category))
+            filters.append(
+                FeedFilter(f"[Category] {feed.category}", category=feed.category, kind="category")
+            )
             seen_categories.add(feed.category)
         if feed.id is not None:
-            filters.append(FeedFilter(f"  {feed.title}", feed_id=feed.id))
+            filters.append(FeedFilter(f"  {feed.title}", feed_id=feed.id, kind="feed"))
     return filters
 
 

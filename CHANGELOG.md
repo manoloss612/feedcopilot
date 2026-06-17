@@ -16,6 +16,7 @@ Initial development version.
 - Added pytest coverage for configuration, database, RSS, exporters, CLI, and runtime helpers.
 - Fixed `pyproject.toml` metadata layout so editable installs and wheel builds work.
 - Replaced the placeholder TUI with a database-backed three-column reader.
+- Added a Catppuccin Mocha inspired TUI palette with state colors.
 - Added optional HTTP/HTTPS proxy support to RSS fetcher, configurable via
   `fetch.proxy` in `config.toml` or the `HTTPS_PROXY` / `HTTP_PROXY` /
   `FEEDCOPILOT_PROXY` environment variables.

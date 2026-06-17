@@ -34,7 +34,7 @@ The current build supports:
 - OPML import/export;
 - JSON export/import for data portability;
 - Markdown digest generation;
-- database-backed three-column TUI;
+- database-backed three-column TUI with a Catppuccin Mocha inspired palette;
 - feed categories;
 - manual feed language setting;
 - unread/read state;
