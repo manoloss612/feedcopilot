@@ -6,6 +6,7 @@ from feedcopilot.db.models import Feed, Item
 from feedcopilot.db.repository import create_feed, create_item_if_new
 from feedcopilot.db.session import get_session, init_db
 from feedcopilot.tui.app import (
+    ICON_SETS,
     FeedCopilotTUI,
     build_filters,
     format_item_label,
@@ -50,11 +51,33 @@ def test_tui_format_helpers(tmp_path):
     label = format_item_label(item)
     preview = render_item_preview(item)
 
-    assert filters[0].label == "All"
-    assert filters[1].label == "[Category] News"
-    assert filters[2].label == "  Example Feed"
-    assert label == "[ ][ ] Example Item"
+    assert filters[0].label == "* All"
+    assert filters[1].label == "[D] News"
+    assert filters[2].label == "  rss Example Feed"
+    assert label == "o   Example Item"
     assert "Example summary" in preview
+
+
+def test_tui_nerd_icon_helpers():
+    feed = Feed(id=1, title="Example Feed", url="https://example.com/rss.xml", category="News")
+    item = Item(
+        feed_id=1,
+        title="Example Item",
+        link="https://example.com/item",
+        summary="Example summary",
+        content_hash="hash",
+    )
+
+    filters = build_filters([feed], ICON_SETS["nerd"])
+    label = format_item_label(item, ICON_SETS["nerd"])
+    preview = render_item_preview(item, ICON_SETS["nerd"])
+
+    assert filters[1].label.startswith(ICON_SETS["nerd"]["category"])
+    assert filters[2].label.strip().startswith(ICON_SETS["nerd"]["feed"])
+    assert ICON_SETS["nerd"]["unread"] in label
+    assert ICON_SETS["nerd"]["title"] in preview
+    assert ICON_SETS["nerd"]["link"] in preview
+    assert ICON_SETS["nerd"]["date"] in preview
 
 
 def test_tui_loads_filters_items_and_preview(tmp_path):

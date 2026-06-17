@@ -24,6 +24,52 @@ class FeedFilter:
     kind: str = "all"
 
 
+ICON_SETS = {
+    "ascii": {
+        "all": "*",
+        "category": "[D]",
+        "feed": "rss",
+        "unread": "o",
+        "read": "x",
+        "star": "*",
+        "title": "#",
+        "link": "url",
+        "date": "date",
+        "fetch": "fetch",
+        "read_field": "read",
+        "star_field": "star",
+    },
+    "nerd": {
+        "all": "\U000f0403",
+        "category": "\U000f024b",
+        "feed": "\U000f0451",
+        "unread": "\U000f01ee",
+        "read": "\U000f012c",
+        "star": "\U000f04ce",
+        "title": "\U000f04f0",
+        "link": "\U000f0339",
+        "date": "\U000f0954",
+        "fetch": "\U000f0453",
+        "read_field": "\U000f012c",
+        "star_field": "\U000f04ce",
+    },
+    "none": {
+        "all": "",
+        "category": "",
+        "feed": "",
+        "unread": "",
+        "read": "",
+        "star": "",
+        "title": "",
+        "link": "",
+        "date": "",
+        "fetch": "",
+        "read_field": "",
+        "star_field": "",
+    },
+}
+
+
 class FeedCopilotTUI(App):
     """Three-column RSS reader backed by the local SQLite database."""
 
@@ -151,6 +197,7 @@ class FeedCopilotTUI(App):
         super().__init__()
         self.config = load_config()
         self.language = self.config.app.language
+        self.icons = ICON_SETS.get(self.config.tui.icon_set, ICON_SETS["ascii"])
         self.db_path = db_path or get_data_dir() / self.config.storage.database
         self.filters: list[FeedFilter] = []
         self.items: list[Item] = []
@@ -184,14 +231,19 @@ class FeedCopilotTUI(App):
 
         if not self.db_path.exists():
             self.filters = [FeedFilter("All")]
-            await feed_list.append(ListItem(Label("All", markup=False), classes="filter-all"))
+            await feed_list.append(
+                ListItem(
+                    Label(with_icon(self.icons, "all", "All"), markup=False),
+                    classes="filter-all",
+                )
+            )
             self.update_preview("Database not found. Run `feedcopilot init` first.")
             return
 
         with get_session(self.db_path) as session:
             feeds = list_feeds(session)
 
-        self.filters = build_filters(feeds)
+        self.filters = build_filters(feeds, self.icons)
         for feed_filter in self.filters:
             list_item = ListItem(
                 Label(feed_filter.label, markup=False),
@@ -222,7 +274,9 @@ class FeedCopilotTUI(App):
 
         if not self.items:
             self.current_item_id = None
-            await item_list.append(ListItem(Label("No items found.", markup=False), disabled=True))
+            await item_list.append(
+                ListItem(Label("No items found.", markup=False), disabled=True)
+            )
             self.update_preview("No items found.")
             return
 
@@ -230,12 +284,15 @@ class FeedCopilotTUI(App):
             classes = "item-read" if item.is_read else "item-unread"
             if item.is_starred:
                 classes += " item-starred"
-            list_item = ListItem(Label(format_item_label(item), markup=False), classes=classes)
+            list_item = ListItem(
+                Label(format_item_label(item, self.icons), markup=False),
+                classes=classes,
+            )
             list_item.item_id = item.id
             await item_list.append(list_item)
 
         self.current_item_id = self.items[0].id
-        self.update_preview(render_item_preview(self.items[0]))
+        self.update_preview(render_item_preview(self.items[0], self.icons))
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         for list_item in event.list_view.query(ListItem):
@@ -251,7 +308,7 @@ class FeedCopilotTUI(App):
         item = self.find_loaded_item(item_id)
         if item is not None:
             self.current_item_id = item.id
-            self.update_preview(render_item_preview(item))
+            self.update_preview(render_item_preview(item, self.icons))
 
     async def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.id == "feed-list":
@@ -316,7 +373,9 @@ class FeedCopilotTUI(App):
                 user_agent=self.config.fetch.user_agent,
                 proxy=self.config.fetch.proxy,
             )
-        self.notify(f"Fetched {total} items, {new} new.")
+        self.notify(
+            f"{with_icon(self.icons, 'fetch', 'Fetched')} {total} items, {new} new."
+        )
         await self.reload_all()
 
     def action_show_help(self) -> None:
@@ -358,34 +417,47 @@ class FeedCopilotTUI(App):
         self.query_one("#right", VerticalScroll).scroll_home(animate=False)
 
 
-def build_filters(feeds: list[Feed]) -> list[FeedFilter]:
-    filters = [FeedFilter("All")]
+def build_filters(feeds: list[Feed], icons: dict[str, str] | None = None) -> list[FeedFilter]:
+    icons = icons or ICON_SETS["ascii"]
+    filters = [FeedFilter(with_icon(icons, "all", "All"))]
     seen_categories: set[str] = set()
     for feed in feeds:
         if feed.category not in seen_categories:
             filters.append(
-                FeedFilter(f"[Category] {feed.category}", category=feed.category, kind="category")
+                FeedFilter(
+                    with_icon(icons, "category", feed.category),
+                    category=feed.category,
+                    kind="category",
+                )
             )
             seen_categories.add(feed.category)
         if feed.id is not None:
-            filters.append(FeedFilter(f"  {feed.title}", feed_id=feed.id, kind="feed"))
+            filters.append(
+                FeedFilter(
+                    f"  {with_icon(icons, 'feed', feed.title)}",
+                    feed_id=feed.id,
+                    kind="feed",
+                )
+            )
     return filters
 
 
-def format_item_label(item: Item) -> str:
-    read_marker = "x" if item.is_read else " "
-    star_marker = "*" if item.is_starred else " "
-    return f"[{read_marker}][{star_marker}] {item.title}"
+def format_item_label(item: Item, icons: dict[str, str] | None = None) -> str:
+    icons = icons or ICON_SETS["ascii"]
+    read_marker = icon(icons, "read" if item.is_read else "unread")
+    star_marker = icon(icons, "star") if item.is_starred else spacer(read_marker)
+    return f"{read_marker} {star_marker} {item.title}".strip()
 
 
-def render_item_preview(item: Item) -> str:
+def render_item_preview(item: Item, icons: dict[str, str] | None = None) -> str:
+    icons = icons or ICON_SETS["ascii"]
     lines = [
-        item.title,
+        with_icon(icons, "title", item.title),
         "",
-        f"Link: {item.link}",
-        f"Published: {item.published_at or ''}",
-        f"Read: {'yes' if item.is_read else 'no'}",
-        f"Starred: {'yes' if item.is_starred else 'no'}",
+        f"{with_icon(icons, 'link', 'Link')}: {item.link}",
+        f"{with_icon(icons, 'date', 'Published')}: {item.published_at or ''}",
+        f"{with_icon(icons, 'read_field', 'Read')}: {'yes' if item.is_read else 'no'}",
+        f"{with_icon(icons, 'star_field', 'Starred')}: {'yes' if item.is_starred else 'no'}",
         "",
     ]
     if item.author:
@@ -395,3 +467,16 @@ def render_item_preview(item: Item) -> str:
     if item.content:
         lines.extend(["Content:", item.content])
     return "\n".join(lines)
+
+
+def icon(icons: dict[str, str], key: str) -> str:
+    return icons.get(key, "")
+
+
+def with_icon(icons: dict[str, str], key: str, text: str) -> str:
+    marker = icon(icons, key)
+    return f"{marker} {text}" if marker else text
+
+
+def spacer(marker: str) -> str:
+    return " " * max(1, len(marker))

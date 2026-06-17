@@ -16,6 +16,7 @@ def test_save_and_load_config(tmp_path):
 
     assert loaded.app.language == "zh"
     assert loaded.storage.database == "feedcopilot.db"
+    assert loaded.tui.icon_set == "ascii"
 
 
 def test_set_config_value_converts_types():
@@ -24,10 +25,12 @@ def test_set_config_value_converts_types():
     updated = set_config_value(config, "fetch.timeout", "30")
     updated = set_config_value(updated, "fetch.full_text", "true")
     updated = set_config_value(updated, "app.language", "zh")
+    updated = set_config_value(updated, "tui.icon_set", "nerd")
 
     assert updated.fetch.timeout == 30
     assert updated.fetch.full_text is True
     assert updated.app.language == "zh"
+    assert updated.tui.icon_set == "nerd"
 
 
 def test_set_config_value_supports_fetch_proxy(tmp_path):

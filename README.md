@@ -34,7 +34,7 @@ The current build supports:
 - OPML import/export;
 - JSON export/import for data portability;
 - Markdown digest generation;
-- database-backed three-column TUI with a Catppuccin Mocha inspired palette;
+- database-backed three-column TUI with a Catppuccin Mocha inspired palette and configurable icons;
 - feed categories;
 - manual feed language setting;
 - unread/read state;
@@ -80,6 +80,19 @@ Short alias:
 fcp fetch
 fcp digest --since 24h
 ```
+
+## TUI Appearance
+
+The TUI uses ASCII status markers by default so it works in ordinary terminals.
+If you use a Nerd Font such as Maple Mono NF in Ghostty, you can enable richer
+icons for feeds, categories, unread/read state, starred items, links, and dates:
+
+```bash
+feedcopilot config set tui.icon_set nerd
+feedcopilot tui
+```
+
+Available icon sets are `ascii`, `nerd`, and `none`.
 
 ## Agent Usage
 

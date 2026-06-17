@@ -33,7 +33,7 @@ FeedCopilot 目前是早期 v0.1 开发版本。核心本地 RSS 工作流已经
 - OPML 导入导出；
 - JSON 数据导入导出；
 - Markdown 摘要生成；
-- 接入本地数据库的三栏 TUI，默认采用 Catppuccin Mocha 风格配色；
+- 接入本地数据库的三栏 TUI，默认采用 Catppuccin Mocha 风格配色，并支持可配置图标；
 - 通过系统任务文件实现定时任务；
 - 备份和恢复；
 - 英文和中文界面字符串；
@@ -79,6 +79,19 @@ fcp digest --since 24h
 ```bash
 feedcopilot config set app.language zh
 ```
+
+## TUI 外观
+
+TUI 默认使用 ASCII 状态标记，保证普通终端也能正常显示。如果你在 Ghostty
+里使用 Maple Mono NF 等 Nerd Font 字体，可以开启更丰富的分类、订阅源、
+未读/已读、收藏、链接和日期图标：
+
+```bash
+feedcopilot config set tui.icon_set nerd
+feedcopilot tui
+```
+
+当前可选图标集为 `ascii`、`nerd` 和 `none`。
 
 ## 常用命令
 

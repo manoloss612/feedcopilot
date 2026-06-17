@@ -54,6 +54,7 @@ class TUIConfig(BaseModel):
     layout: Literal["three_column"] = "three_column"
     show_health_status: bool = True
     preview_width: int = 40
+    icon_set: Literal["ascii", "nerd", "none"] = "ascii"
 
 
 class FeedCopilotConfig(BaseModel):
